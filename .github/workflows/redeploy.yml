@@ -21,6 +21,7 @@ jobs:
           script: |
             // For workflow_dispatch or direct pushes without PRs, we should always deploy
             if (!context.payload.pull_request) {
+              console.log('No PR associated with this commit, deploying');
               return {shouldDeploy: true};
             }
 
@@ -33,6 +34,7 @@ jobs:
 
             if (associatedPRs.data.length === 0) {
               // No associated PR found, safe to deploy
+              console.log('No PR associated with this commit, deploying');
               return {shouldDeploy: true};
             }
 
@@ -40,7 +42,12 @@ jobs:
             const pr = associatedPRs.data[0];
             const hasDoNotDeployLabel = pr.labels.some(label => label.name === 'dont-redeploy');
 
+            console.log(`PR ${pr.number} has ${hasDoNotDeployLabel ? '' : 'no'} "dont-redeploy" label`);
             return {shouldDeploy: !hasDoNotDeployLabel};
+
+      - name: print result
+        run: |
+          echo "shouldDeploy: ${{ fromJSON(steps.check-label.outputs.result) }}"
 
       - name: Trigger redeploy
         if: ${{ fromJSON(steps.check-label.outputs.result).shouldDeploy }}
